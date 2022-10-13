@@ -33,7 +33,13 @@ struct ListedToken {
     bool sold;
 }
 
+struct Fee {
+    uint256 buyerFee;
+    uint256 sellerFee;
+}
+
 mapping (uint256 => ListedToken) private listedToken;
+mapping (uint256 => Fee) private fees;
 
 
 modifier onlyOwner() {
@@ -59,8 +65,28 @@ function listNft(uint256 _tokenid, uint256 _amount, uint256 _price, uint256 _roy
     IERC1155(nftContract).safeTransferFrom(msg.sender, address(this), _tokenid, _amount, "");
     }
 
-    function buyNft(uint256 _tokenid, uint256 _amount) external payable {
+    function calBuyerfee(uint256 fee) internal pure returns(uint256) {
+        return fee * 5 / 100;
+    }
 
+    function calSellerfee(uint256 fee) internal pure returns(uint256) {
+        return fee * 5 / 100;
+    }
+
+    function calRoyaltyfee(uint256 fee) internal pure returns(uint256) {
+        return fee * 3 / 100;
+    }
+
+    function buyNft(uint256 _tokenid, uint256 _amount) external payable {
+        uint256 price = listedToken[_tokenid].price;
+        uint256 buyerFee = calBuyerfee(fees[_tokenid].buyerFee) * price;
+        uint256 royaltyFee = calRoyaltyfee(listedToken[_tokenid].royalty) * price;
+        uint256 totalFeePaid = buyerFee + royaltyFee;
+        uint256 finalPrice = price - totalFeePaid;
+
+        payable(listedToken[_tokenid].seller).transfer(finalPrice);
+        payable(listedToken[_tokenid].owner).transfer(buyerFee);
+        IERC1155(nftContract).safeTransferFrom(address(this), msg.sender, _tokenid, _amount, "");
     }
 
 }
