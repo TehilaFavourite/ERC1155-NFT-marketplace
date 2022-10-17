@@ -31,6 +31,7 @@ struct ListedToken {
     address payable owner;
     bool currentlyListed;
     bool sold;
+    bool isForSale;
 }
 
 struct Fee {
@@ -38,8 +39,8 @@ struct Fee {
     uint256 sellerFee;
 }
 
-mapping (uint256 => ListedToken) private listedToken;
-mapping (uint256 => Fee) private fees;
+mapping (uint256 => ListedToken) public listedToken;
+mapping (uint256 => Fee) public fees;
 
 
 modifier onlyOwner() {
@@ -47,19 +48,19 @@ modifier onlyOwner() {
     _;
 }
 
-function listNft(uint256 _tokenid, uint256 _amount, uint256 _price, uint256 _royalty, bool _listed) external {
+function listNft(uint256 _tokenid, uint256 _amount, uint256 _price, bool _listed, bool forSale) external {
     ListedToken storage _listedToken = listedToken[_tokenid];
-    require(_listedToken.tokenId > 0, "Token does not exist");
-    // require(_listedToken.nftId > 0, "NFT Id does not exist");
-    require(_listedToken.royalty > 0 && _listedToken.royalty < 30, "royalty should be less than 30");
+    _listedToken.seller = payable(msg.sender);
+    require(nftContract.balanceOf(msg.sender, _tokenid) != 0, "you do not own this NFT"); 
+    // require(_listedToken.tokenId > 0, "Token does not exist");
+    // require(_listedToken.royalty > 0 && _listedToken.royalty < 30, "royalty should be less than 30");
     // require(nftContract.ownerOf(_tokenid) == msg.sender, "You do not own an NFT");
 
     _listedToken.tokenId =  _tokenid;
-    // _listedToken.nftId = _nftId;
+    _listedToken.isForSale = forSale;
     _listedToken.amount = _amount;
     _listedToken.price = _price;
-    _listedToken.seller = payable(msg.sender);
-    _listedToken.royalty = _royalty;
+    // _listedToken.royalty = _royalty;
     _listedToken.currentlyListed = _listed;
 
     IERC1155(nftContract).safeTransferFrom(msg.sender, address(this), _tokenid, _amount, "");
@@ -78,6 +79,7 @@ function listNft(uint256 _tokenid, uint256 _amount, uint256 _price, uint256 _roy
     }
 
     function buyNft(uint256 _tokenid, uint256 _amount) external payable {
+
         uint256 price = listedToken[_tokenid].price;
         uint256 buyerFee = calBuyerfee(fees[_tokenid].buyerFee) * price;
         uint256 royaltyFee = calRoyaltyfee(listedToken[_tokenid].royalty) * price;
