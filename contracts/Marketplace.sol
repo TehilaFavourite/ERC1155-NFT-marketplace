@@ -28,6 +28,7 @@ struct ListedToken {
     uint256 price;
     uint256 royalty;
     address payable seller;
+    address payable buyer;
     address payable owner;
     bool currentlyListed;
     bool sold;
@@ -79,8 +80,14 @@ function listNft(uint256 _tokenid, uint256 _amount, uint256 _price, bool _listed
     }
 
     function buyNft(uint256 _tokenid, uint256 _amount) external payable {
+        ListedToken storage _listedToken = listedToken[_tokenid];
 
         uint256 price = listedToken[_tokenid].price;
+        _listedToken.buyer = payable(msg.sender);
+        require(listedToken[_tokenid].isForSale == true, "property is not for sale");
+        require(msg.value >= price, "Price is not complete");
+
+
         uint256 buyerFee = calBuyerfee(fees[_tokenid].buyerFee) * price;
         uint256 royaltyFee = calRoyaltyfee(listedToken[_tokenid].royalty) * price;
         uint256 totalFeePaid = buyerFee + royaltyFee;
