@@ -40,8 +40,8 @@ struct Fee {
     uint256 sellerFee;
 }
 
-mapping (uint256 => ListedToken) public listedToken;
-mapping (uint256 => Fee) public fees;
+mapping (uint256 => ListedToken) private listedToken;
+mapping (uint256 => Fee) private fees;
 
 
 modifier onlyOwner() {
@@ -95,16 +95,13 @@ function listNft(uint256 _tokenid, uint256 _amount, uint256 _price, bool _listed
         require(listedToken[_tokenid].currentlyListed, "Id is not for currently listed");
 
         uint256 buyerFee = calBuyerfee(listedToken[_tokenid].price);
-        // uint256 royaltyFee = calRoyaltyfee(listedToken[_tokenid].royalty);
-        // uint256 totalFeePaid = buyerFee + royaltyFee;
-        // uint256 finalPrice = price - totalFeePaid;
         uint256 finalFee = price - buyerFee;
 
         payable(listedToken[_tokenid].seller).transfer(finalFee);
-        // payable(listedToken[_tokenid].seller).transfer(royaltyFee);
-        payable(address(this)).transfer(buyerFee);
         IERC1155(nftContract).safeTransferFrom(address(this), msg.sender, _tokenid, _amount, "");
     }
+
+    // function cancelSale(uint256 _tokenid) external 
 
     function getMarketplaceBalance() external view returns (uint256) {
         return address(this).balance;
@@ -113,6 +110,7 @@ function listNft(uint256 _tokenid, uint256 _amount, uint256 _price, bool _listed
     function getUserBalance(address _user) external view returns (uint256) {
         return address(_user).balance;
     }
+
 
 }
 
