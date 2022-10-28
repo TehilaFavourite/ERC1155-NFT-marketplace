@@ -39,8 +39,7 @@ event CancelSale
     (
     address _seller,
     uint256 _tokenId,
-    uint256 _amountOfToken,
-    uint256 _price, 
+    bool _isCanceled,
     uint256 _time
   );
 
@@ -133,6 +132,9 @@ function listNft(uint256 _tokenid, uint256 _amount, uint256 _price, bool _listed
 
         payable(listedToken[_tokenid].seller).transfer(finalFee);
         IERC1155(nftContract).safeTransferFrom(address(this), msg.sender, _tokenid, _amount, "");
+
+        emit BuyEvent(msg.sender, _tokenid, _amount, finalFee, block.timestamp);
+
     }
 
     function cancelSale(uint256 _tokenid, bool _isCancelled) external {
@@ -141,6 +143,8 @@ function listNft(uint256 _tokenid, uint256 _amount, uint256 _price, bool _listed
         require(!check[_tokenid].sold, "this token Id has been sold");
 
         check[_tokenid].isCancelled = _isCancelled;
+
+        emit CancelSale(msg.sender, _tokenid, _isCancelled, block.timestamp);
     }
 
     function getMarketplaceBalance() external view returns (uint256) {
