@@ -29,10 +29,19 @@ event ListedProperty
 event BuyEvent 
     (
     address _buyer,
-    address _token,
     uint256 _tokenId,
     uint256 _amountOfToken,
-    uint256 _price
+    uint256 _price, 
+    uint256 _time
+  );
+
+event CancelSale 
+    (
+    address _seller,
+    uint256 _tokenId,
+    uint256 _amountOfToken,
+    uint256 _price, 
+    uint256 _time
   );
 
 
