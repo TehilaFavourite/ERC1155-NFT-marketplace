@@ -121,7 +121,6 @@ contract  Marketplace is ERC1155Holder {
         check[_tokenid].isForSale = forSale;
         check[_tokenid].sold = _sold;
         listedToken[_tokenid].amount = _amount;
-        // _listedToken.price = _price;
         // _listedToken.royalty = _royalty;
         check[_tokenid].currentlyListed = _listed;
 
@@ -140,17 +139,19 @@ contract  Marketplace is ERC1155Holder {
             }
 
 
-    function makeSellOffer(uint256 _tokenId, uint256 _minPrice) external tokenOwnerOnly(_tokenId) {
+    function makeSellOffer(uint256 _tokenId, uint256 _minPrice, uint256 _amount) external tokenOwnerOnly(_tokenId) {
         require(check[_tokenId].currentlyListed, "this token is not listed");
         require(!check[_tokenId].sold, "this token is sold");
         require(listedToken[_tokenId].tokenId ==  _tokenId, "wrong token Id");
         require(check[_tokenId].isForSale, "Id is not for sale");
         activeSellOffers[_tokenId].minPrice = _minPrice;
         listedToken[_tokenId].seller =  payable(msg.sender);
+        IERC1155(nftContract).safeTransferFrom(msg.sender, address(this), _tokenId, _amount, "");
+
         // event
     }
 
-    function withdrawSellOffer(uint256 _tokenId, bool _withdrawOffer) external tokenOwnerOnly(_tokenId) {
+    function withdrawSellOffer(uint256 _tokenId, uint256 _amount, bool _withdrawOffer) external tokenOwnerOnly(_tokenId) {
         require(check[_tokenId].currentlyListed, "this token is not listed");
         require(listedToken[_tokenId].tokenId ==  _tokenId, "wrong token Id");
         require(check[_tokenId].isForSale, "Id is not for sale");
@@ -159,6 +160,8 @@ contract  Marketplace is ERC1155Holder {
         require(activeSellOffers[_tokenId].seller == msg.sender, "Not seller");
 
         check[_tokenId].withdrawOffer = _withdrawOffer;
+        IERC1155(nftContract).safeTransferFrom(address(this), msg.sender, _tokenId, _amount, "");
+
         }
 
     function calBuyerfee(uint256 fee) internal pure returns(uint256) {
