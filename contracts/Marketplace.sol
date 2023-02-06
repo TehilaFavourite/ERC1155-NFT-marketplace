@@ -7,12 +7,12 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "./IERC2981.sol";
 
-
+// uint256[] calldata _tokenIds shadows Counters.Counter private _tokenIds;
 contract  Marketplace is ERC1155Holder {
 
     bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
     using Counters for Counters.Counter;
-    Counters.Counter private _tokenIds;
+    // Counters.Counter private _tokenIds;
     Counters.Counter private _nftSold;
     IERC1155 private nftContract;
     address private owner;
@@ -50,7 +50,8 @@ contract  Marketplace is ERC1155Holder {
         nftContract = IERC1155(_nftContract);
     }
 
-
+    // a struct for the tokens listed in the market. 
+    // It has the token ID, amount, address of seller, buyer and owner
     struct ListedToken {
         uint256 tokenId;
         // uint256 nftId;
@@ -64,6 +65,7 @@ contract  Marketplace is ERC1155Holder {
         uint256 sellerFee;
     }
 
+    // this check runs thriugh all checks
     struct Check {
         bool currentlyListed;
         bool sold;
@@ -107,7 +109,7 @@ contract  Marketplace is ERC1155Holder {
         return success;
     }
 
-    function listNft(uint256 _tokenid, uint256 _price, bool _listed, bool forSale, bool _sold) external {
+    function listNft(uint256 _tokenid, uint256 _amount, uint256 _price, bool _listed, bool forSale, bool _sold) external {
         listedToken[_tokenid].seller = payable(msg.sender);
         require(nftContract.balanceOf(msg.sender, _tokenid) != 0, "you do not own this NFT");
         require(!check[_tokenid].isForSale, "This token Id has been sold"); 
@@ -118,7 +120,7 @@ contract  Marketplace is ERC1155Holder {
         listedToken[_tokenid].tokenId =  _tokenid;
         check[_tokenid].isForSale = forSale;
         check[_tokenid].sold = _sold;
-        // listedToken[_tokenid].amount = _amount;
+        listedToken[_tokenid].amount = _amount;
         // _listedToken.price = _price;
         // _listedToken.royalty = _royalty;
         check[_tokenid].currentlyListed = _listed;
@@ -128,13 +130,19 @@ contract  Marketplace is ERC1155Holder {
         emit ListedProperty(msg.sender, _tokenid, _price, block.timestamp, _listed, forSale, _sold);
         }
 
-    function userNFTBal(address _addr, uint256 _tokenid) external view returns (uint256) {
-        return nftContract.balanceOf(_addr, _tokenid);
-        }
+        function userNFTBal(address _addr, uint256 _tokenid) external view returns (uint256) {
+            return nftContract.balanceOf(_addr, _tokenid);
+            }
+
+        function batchUserNftBal(address[] calldata _addr, uint256[] calldata _tokenIds) 
+            external view returns (uint256[] memory) {
+                return nftContract.balanceOfBatch(_addr, _tokenIds);
+            }
 
 
     function makeSellOffer(uint256 _tokenId, uint256 _minPrice) external tokenOwnerOnly(_tokenId) {
         require(check[_tokenId].currentlyListed, "this token is not listed");
+        require(!check[_tokenId].sold, "this token is sold");
         require(listedToken[_tokenId].tokenId ==  _tokenId, "wrong token Id");
         require(check[_tokenId].isForSale, "Id is not for sale");
         activeSellOffers[_tokenId].minPrice = _minPrice;
@@ -146,6 +154,7 @@ contract  Marketplace is ERC1155Holder {
         require(check[_tokenId].currentlyListed, "this token is not listed");
         require(listedToken[_tokenId].tokenId ==  _tokenId, "wrong token Id");
         require(check[_tokenId].isForSale, "Id is not for sale");
+        require(!check[_tokenId].sold, "this token is sold");
         require(activeSellOffers[_tokenId].seller != address(0), "no sale offer");
         require(activeSellOffers[_tokenId].seller == msg.sender, "Not seller");
 
